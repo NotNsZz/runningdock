@@ -59,7 +59,6 @@ local function applySettingsToPlayer(targetPlayer, doChams)
 	if not targetPlayer.Character then return end
 	local char = targetPlayer.Character
 
-	-- Only show chams for opponent team
 	local sameTeam = false
 	if LOCAL_PLAYER.Team and targetPlayer.Team and LOCAL_PLAYER.Team == targetPlayer.Team then
 		sameTeam = true
@@ -125,7 +124,7 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = LOCAL_PLAYER:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 240, 0, 160)
+frame.Size = UDim2.new(0, 240, 0, 180)
 frame.Position = UDim2.new(0.02, 0, 0.3, 0)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BackgroundTransparency = 0.15
@@ -157,12 +156,12 @@ local function makeButton(name, yOffset)
 	return btn
 end
 
-local hitboxBtn = makeButton("Hitbox (external)", 36)
+local hitboxBtn = makeButton("Hitbox (external) (Z key also)", 36)
 local chamsBtn = makeButton("Chams / ESP", 76)
 local instantPPBtn = makeButton("InstantPP", 116)
 
 local function updateButtons()
-	hitboxBtn.Text = (playerData.settings.hitbox and "[ON] " or "[OFF] ") .. "Hitbox (external)"
+	hitboxBtn.Text = (playerData.settings.hitbox and "[ON] " or "[OFF] ") .. "Hitbox (external) (Z key also)"
 	chamsBtn.Text  = (playerData.settings.chams  and "[ON] " or "[OFF] ") .. "Chams / ESP"
 	instantPPBtn.Text = (playerData.settings.instantpp and "[ON] " or "[OFF] ") .. "InstantPP"
 end
@@ -189,6 +188,17 @@ instantPPBtn.MouseButton1Click:Connect(function()
 end)
 
 updateButtons()
+
+-- === Tiny label for LAlt toggle ===
+local infoLabel = Instance.new("TextLabel")
+infoLabel.Size = UDim2.new(1, 0, 0, 16)
+infoLabel.Position = UDim2.new(0, 0, 1, -18)
+infoLabel.BackgroundTransparency = 1
+infoLabel.Text = "Press LAlt to toggle GUI"
+infoLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+infoLabel.Font = Enum.Font.SourceSans
+infoLabel.TextSize = 12
+infoLabel.Parent = frame
 
 -- === LAlt Toggle GUI ===
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
