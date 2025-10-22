@@ -1,18 +1,53 @@
+-- LocalScript (place in StarterPlayer > StarterPlayerScripts)
+-- Auto applies hitboxes to all players (including new and respawning ones)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
 _G.HeadSize = 35
-_G.Disabled = true
- 
-game:GetService('RunService').RenderStepped:connect(function()
-if _G.Disabled then
-for i,v in next, game:GetService('Players'):GetPlayers() do
-if v.Name ~= game:GetService('Players').LocalPlayer.Name then
-pcall(function()
-v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
-v.Character.HumanoidRootPart.Transparency = 0.7
-v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really black")
-v.Character.HumanoidRootPart.Material = "Neon"
-v.Character.HumanoidRootPart.CanCollide = false
-end)
+_G.Enabled = true -- true = ON, false = OFF
+
+local function applyHitbox(player)
+	if player == Players.LocalPlayer then return end
+
+	local function onCharacterAdded(character)
+		task.wait(1) -- small delay for character to load
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			hrp.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+			hrp.Transparency = 0.7
+			hrp.BrickColor = BrickColor.new("Really black")
+			hrp.Material = Enum.Material.Neon
+			hrp.CanCollide = false
+		end
+	end
+
+	if player.Character then
+		onCharacterAdded(player.Character)
+	end
+	player.CharacterAdded:Connect(onCharacterAdded)
 end
+
+-- Apply to all current players
+for _, player in pairs(Players:GetPlayers()) do
+	applyHitbox(player)
 end
-end
+
+-- Auto-apply to new players
+Players.PlayerAdded:Connect(applyHitbox)
+
+-- Keep hitboxes updated every frame (optional)
+RunService.RenderStepped:Connect(function()
+	if not _G.Enabled then return end
+
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			local hrp = player.Character.HumanoidRootPart
+			hrp.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+			hrp.Transparency = 0.7
+			hrp.BrickColor = BrickColor.new("Really black")
+			hrp.Material = Enum.Material.Neon
+			hrp.CanCollide = false
+		end
+	end
 end)
