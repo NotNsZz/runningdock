@@ -3,6 +3,7 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 _G.HeadSize = 10
 _G.Enabled = true -- true = ON, false = OFF
@@ -62,6 +63,19 @@ RunService.RenderStepped:Connect(function()
 			hrp.BrickColor = BrickColor.new("Really black")
 			hrp.Material = Enum.Material.Neon
 			hrp.CanCollide = false
+		end
+	end
+end)
+
+-- Keybind to toggle script (Z)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.Z then
+		_G.Enabled = not _G.Enabled
+		if _G.Enabled then
+			print("Hitboxes Enabled")
+		else
+			print("Hitboxes Disabled")
 		end
 	end
 end)
