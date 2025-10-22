@@ -4,7 +4,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
-_G.HeadSize = 35
+_G.HeadSize = 10
 _G.Enabled = true -- true = ON, false = OFF
 
 local function applyHitbox(player)
