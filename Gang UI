@@ -1,0 +1,199 @@
+-- LocalScript (place in StarterPlayer > StarterPlayerScripts)
+-- Hitbox (external), Chams / ESP (opponent only), InstantPP, draggable GUI, LAlt toggle
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LOCAL_PLAYER = Players.LocalPlayer
+
+-- CONFIG
+local ESP_NAME = "UserChams_v1"
+local playerData = { settings = { hitbox = false, chams = false, instantpp = false } }
+
+-- === Utility: Chams (opponent only) ===
+local function createChams(character, displayName)
+	if character:FindFirstChild(ESP_NAME) then return end
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = ESP_NAME
+	highlight.Adornee = character
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.FillTransparency = 0.5
+	highlight.OutlineTransparency = 0.6
+	highlight.Parent = character
+
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		local billboard = Instance.new("BillboardGui")
+		billboard.Name = "ESP_NameTag"
+		billboard.Adornee = hrp
+		billboard.Size = UDim2.new(0, 120, 0, 28)
+		billboard.AlwaysOnTop = true
+		billboard.StudsOffset = Vector3.new(0, 3.2, 0)
+		billboard.Parent = character
+
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Size = UDim2.fromScale(1, 1)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.TextScaled = true
+		nameLabel.Font = Enum.Font.SourceSansSemibold
+		nameLabel.Text = displayName or "Player"
+		nameLabel.TextStrokeTransparency = 0.6
+		nameLabel.TextColor3 = Color3.new(1, 1, 1)
+		nameLabel.Parent = billboard
+	end
+end
+
+-- === Remove helpers ===
+local function removeHelpers(character)
+	for _, part in ipairs(character:GetDescendants()) do
+		if part.Name == ESP_NAME or part.Name == "ESP_NameTag" then
+			pcall(function() part:Destroy() end)
+		end
+	end
+end
+
+-- === Apply chams only to opponents ===
+local function applySettingsToPlayer(targetPlayer, doChams)
+	if targetPlayer == LOCAL_PLAYER then return end
+	if not targetPlayer.Character then return end
+	local char = targetPlayer.Character
+
+	-- Only show chams for opponent team
+	local sameTeam = false
+	if LOCAL_PLAYER.Team and targetPlayer.Team and LOCAL_PLAYER.Team == targetPlayer.Team then
+		sameTeam = true
+	end
+
+	if doChams and not sameTeam then
+		local displayName = targetPlayer.DisplayName ~= "" and targetPlayer.DisplayName or targetPlayer.Name
+		createChams(char, displayName)
+	else
+		removeHelpers(char)
+	end
+end
+
+local function applyToAll(doChams)
+	for _, p in ipairs(Players:GetPlayers()) do
+		applySettingsToPlayer(p, doChams)
+	end
+end
+
+-- === InstantPP Function ===
+local function triggerAllPrompts()
+	for _, prompt in ipairs(workspace:GetDescendants()) do
+		if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+			pcall(function()
+				fireproximityprompt(prompt)
+			end)
+		end
+	end
+end
+
+-- === Events ===
+for _, p in ipairs(Players:GetPlayers()) do
+	if p ~= LOCAL_PLAYER then
+		p.CharacterAdded:Connect(function()
+			task.wait(1)
+			applySettingsToPlayer(p, playerData.settings.chams)
+		end)
+	end
+end
+
+Players.PlayerAdded:Connect(function(p)
+	if p ~= LOCAL_PLAYER then
+		p.CharacterAdded:Connect(function()
+			task.wait(1)
+			applySettingsToPlayer(p, playerData.settings.chams)
+		end)
+	end
+end)
+
+RunService.Heartbeat:Connect(function()
+	for _, p in ipairs(Players:GetPlayers()) do
+		applySettingsToPlayer(p, playerData.settings.chams)
+	end
+	if playerData.settings.instantpp then
+		triggerAllPrompts()
+	end
+end)
+
+-- === GUI ===
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "HitboxChamsGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = LOCAL_PLAYER:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 240, 0, 160)
+frame.Position = UDim2.new(0.02, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BackgroundTransparency = 0.15
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 28)
+title.BackgroundTransparency = 1
+title.Text = "Hitbox, Chams & InstantPP"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 18
+title.Parent = frame
+
+local function makeButton(name, yOffset)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -12, 0, 36)
+	btn.Position = UDim2.new(0, 6, 0, yOffset)
+	btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	btn.BorderSizePixel = 0
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 16
+	btn.Text = "[OFF] " .. name
+	btn.Parent = frame
+	return btn
+end
+
+local hitboxBtn = makeButton("Hitbox (external)", 36)
+local chamsBtn = makeButton("Chams / ESP", 76)
+local instantPPBtn = makeButton("InstantPP", 116)
+
+local function updateButtons()
+	hitboxBtn.Text = (playerData.settings.hitbox and "[ON] " or "[OFF] ") .. "Hitbox (external)"
+	chamsBtn.Text  = (playerData.settings.chams  and "[ON] " or "[OFF] ") .. "Chams / ESP"
+	instantPPBtn.Text = (playerData.settings.instantpp and "[ON] " or "[OFF] ") .. "InstantPP"
+end
+
+hitboxBtn.MouseButton1Click:Connect(function()
+	playerData.settings.hitbox = not playerData.settings.hitbox
+	updateButtons()
+	if playerData.settings.hitbox then
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/NotNsZz/runningdock/refs/heads/main/updatedv2"))()
+	else
+		warn("[Hitbox Toggle] OFF - External script toggled off (no cleanup).")
+	end
+end)
+
+chamsBtn.MouseButton1Click:Connect(function()
+	playerData.settings.chams = not playerData.settings.chams
+	updateButtons()
+	applyToAll(playerData.settings.chams)
+end)
+
+instantPPBtn.MouseButton1Click:Connect(function()
+	playerData.settings.instantpp = not playerData.settings.instantpp
+	updateButtons()
+end)
+
+updateButtons()
+
+-- === LAlt Toggle GUI ===
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.LeftAlt then
+		screenGui.Enabled = not screenGui.Enabled
+	end
+end)
