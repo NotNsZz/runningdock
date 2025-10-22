@@ -1,0 +1,67 @@
+-- LocalScript (place in StarterPlayer > StarterPlayerScripts)
+-- Auto applies hitboxes ONLY to players on other teams (including new and respawning ones)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+_G.HeadSize = 10
+_G.Enabled = true -- true = ON, false = OFF
+
+local LocalPlayer = Players.LocalPlayer
+
+local function applyHitbox(player)
+	if player == LocalPlayer then return end
+	if player.Team == LocalPlayer.Team then return end -- skip same team
+
+	local function onCharacterAdded(character)
+		task.wait(1) -- small delay for character to load
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			hrp.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+			hrp.Transparency = 0.7
+			hrp.BrickColor = BrickColor.new("Really black")
+			hrp.Material = Enum.Material.Neon
+			hrp.CanCollide = false
+		end
+	end
+
+	if player.Character then
+		onCharacterAdded(player.Character)
+	end
+	player.CharacterAdded:Connect(onCharacterAdded)
+end
+
+-- Apply to all current players on other teams
+for _, player in pairs(Players:GetPlayers()) do
+	if player.Team ~= LocalPlayer.Team then
+		applyHitbox(player)
+	end
+end
+
+-- Auto-apply to new players (if they’re on another team)
+Players.PlayerAdded:Connect(function(player)
+	player:GetPropertyChangedSignal("Team"):Connect(function()
+		if player.Team ~= LocalPlayer.Team then
+			applyHitbox(player)
+		end
+	end)
+	if player.Team ~= LocalPlayer.Team then
+		applyHitbox(player)
+	end
+end)
+
+-- Keep hitboxes updated every frame
+RunService.RenderStepped:Connect(function()
+	if not _G.Enabled then return end
+
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			local hrp = player.Character.HumanoidRootPart
+			hrp.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
+			hrp.Transparency = 0.7
+			hrp.BrickColor = BrickColor.new("Really black")
+			hrp.Material = Enum.Material.Neon
+			hrp.CanCollide = false
+		end
+	end
+end)
